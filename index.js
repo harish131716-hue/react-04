@@ -46,7 +46,7 @@ app.use((error, req, res, next) => {
 // Connect to MongoDB and start server
 async function startServer() {
   try {
-    if (!process.env.MONGO_URI) {
+    if (!process.env.MONGO_DB_URI) {
       throw new Error('MONGO_URI is missing from environment variables');
     }
 
