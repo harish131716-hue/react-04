@@ -1,31 +1,17 @@
+require('dotenv').config();
 
 const express = require('express');
 const mongoose = require('mongoose');
-const path = require('path');
 const cors = require('cors');
-require('dotenv').config();
 
 const routes = require('./routes/api');
 const app = express();
 
-const port = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// MongoDB connection
-mongoose
-  .connect(process.env.MONGO_DB_URI)
-  .then(() => {
-    console.log('Database connected successfully');
-  })
-  .catch((error) => {
-    console.error('MongoDB connection failed:', error.message);
-  });
-
-// API routes
-app.use('/api', routes);
 
 // Health-check endpoint
 app.get('/api/health', (req, res) => {
@@ -34,30 +20,19 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve React production build
-const frontendPath = path.join(__dirname, 'client', 'dist');
+// API routes
+app.use('/api', routes);
 
-app.use(express.static(frontendPath));
-
-// Handle React routes
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({
-      message: 'API endpoint not found'
-    });
-  }
-
-  res.sendFile(
-    path.join(frontendPath, 'index.html'),
-    (error) => {
-      if (error) next(error);
-    }
-  );
+// Handle unknown API endpoints
+app.use('/api/*', (req, res) => {
+  res.status(404).json({
+    message: 'API endpoint not found'
+  });
 });
 
 // Error handler
 app.use((error, req, res, next) => {
-  console.error(error);
+  console.error('Server error:', error.message);
 
   if (res.headersSent) {
     return next(error);
@@ -68,7 +43,24 @@ app.use((error, req, res, next) => {
   });
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+// Connect to MongoDB and start server
+async function startServer() {
+  try {
+    if (!process.env.MONGO_URI) {
+      throw new Error('MONGO_URI is missing from environment variables');
+    }
+
+    await mongoose.connect(process.env.MONGO_URI);
+
+    console.log('Database connected successfully');
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Application startup failed:', error.message);
+    process.exit(1);
+  }
+}
+
+startServer();
