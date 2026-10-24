@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const Application = require('../models/todo');
@@ -12,7 +11,8 @@ router.get('/applications', async (req, res) => {
 
     res.status(200).json(applications);
   } catch (error) {
-    console.error('Error retrieving applications:', error);
+    console.error('Error retrieving applications:', error.message);
+
     res.status(500).json({
       message: 'Failed to retrieve applications'
     });
@@ -38,7 +38,8 @@ router.get('/applications/:id', async (req, res) => {
 
     res.status(200).json(application);
   } catch (error) {
-    console.error('Error retrieving application:', error);
+    console.error('Error retrieving application:', error.message);
+
     res.status(500).json({
       message: 'Failed to retrieve application'
     });
@@ -58,9 +59,12 @@ router.post('/applications', async (req, res) => {
     } = req.body;
 
     if (
-      !name?.trim() ||
-      !email?.trim() ||
-      !rollNumber?.trim() ||
+      typeof name !== 'string' ||
+      !name.trim() ||
+      typeof email !== 'string' ||
+      !email.trim() ||
+      typeof rollNumber !== 'string' ||
+      !rollNumber.trim() ||
       !internshipId ||
       !internshipTitle ||
       !company
@@ -80,7 +84,7 @@ router.post('/applications', async (req, res) => {
 
     const application = new Application({
       name: name.trim(),
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       rollNumber: rollNumber.trim(),
       internshipId,
       internshipTitle,
@@ -89,7 +93,7 @@ router.post('/applications', async (req, res) => {
 
     const savedApplication = await application.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       message: 'Application submitted successfully!',
       application: savedApplication
     });
@@ -102,7 +106,7 @@ router.post('/applications', async (req, res) => {
       });
     }
 
-    res.status(500).json({
+    return res.status(500).json({
       message: 'Failed to submit application'
     });
   }
